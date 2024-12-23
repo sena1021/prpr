@@ -17,5 +17,5 @@ class Report(Base):
     importance = Column(Integer)
     image = Column(String)
     location = Column(String)
-    datetime = Column(String)			
+    datetime = Column(String)	
  			
