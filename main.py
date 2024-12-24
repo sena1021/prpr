@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.params import File
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from disaster_report import handle_disaster_report
 import models
 from database import SessionLocal, engine
 from contextlib import asynccontextmanager
@@ -74,12 +75,10 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     else:
         return {"success": False}
 
-
 # 画像保存用ディレクトリ
 UPLOAD_DIR = "uploaded_images"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# 災害報告エンドポイント
 @app.post("/disaster_report")
 async def disaster_report(
     disaster: str = Form(...),
@@ -91,32 +90,40 @@ async def disaster_report(
     images: List[UploadFile] = File(...),
     db: Session = Depends(get_db),
 ):
+    return await handle_disaster_report(
+        disaster=disaster,
+        description=description,
+        isImportant=isImportant,
+        importance=importance,
+        latitude=latitude,
+        longitude=longitude,
+        images=images,
+        db=db
+    )
+
+# 位置情報を返すエンドポイント
+@app.get("/disaster_report")
+async def get_disaster_reports(db: Session = Depends(get_db)):
     try:
-        # アップロードされた画像をBase64エンコードして保存
-        base64_images = []
-        for image in images:
-            image_bytes = await image.read()
-            encoded_image = base64.b64encode(image_bytes).decode('utf-8')
-            base64_images.append(encoded_image)
-
-        # データベースに新しいレポートを作成して保存
-        report = models.Report(
-            content=description,
-            importance=importance,
-            image=",".join(base64_images),
-            location=f"{latitude},{longitude}",
-            datetime=datetime.datetime.now(),
-        )
-        db.add(report)
-        db.commit()
-        db.refresh(report)
-
-        return {"success": True, "report_id": report.support_id}
-    except Exception as e:
-        db.rollback()
-        print(f"エラー詳細: {e}")  # サーバーログに詳細を記録
-        raise HTTPException(status_code=500, detail=f"データ保存中にエラーが発生しました。エラー詳細: {str(e)}")
+        # Reportテーブルから全ての災害報告を取得
+        reports = db.query(models.Report).all()
+        
+        # 位置情報（latitude, longitude）をリストとして返す
+        location_data = []
+        for report in reports:
+            latitude, longitude = report.location.split(',')
+            location_data.append({
+                "report_id": report.support_id,
+                "latitude": float(latitude),
+                "longitude": float(longitude),
+            })
+        
+        return {"success": True, "locations": location_data}
     
+    except Exception as e:
+        print(f"エラー詳細: {e}")
+        raise HTTPException(status_code=500, detail=f"エラーが発生しました。エラー詳細: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get('PORT', 8000))  # デフォルトポートを8000に変更

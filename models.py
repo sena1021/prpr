@@ -21,7 +21,6 @@ class Report(Base):
     location = Column(String, nullable=False)  # 緯度経度は必須項目
     datetime = Column(DateTime, default=dt.datetime.utcnow, nullable=False)  # 現在日時をデフォルト設定
 
-
 # 既存のテーブルを削除してから再作成
 # models.Base.metadata.drop_all(bind=engine)  # 全てのテーブルを削除
 models.Base.metadata.create_all(bind=engine)  # 新しいテーブルを作成
