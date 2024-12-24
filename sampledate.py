@@ -1,50 +1,70 @@
 from sqlalchemy.orm import Session
-from database import engine, SessionLocal
+from database import SessionLocal, engine
 import models
+from datetime import datetime  # 修正箇所
 
-# データベースの初期化
-models.Base.metadata.create_all(bind=engine)
+# データベースセッションの準備
+db: Session = SessionLocal()
 
-# サンプルデータを挿入
-def create_sample_data():
-    db: Session = SessionLocal()
+# ユーザーテーブルにサンプルデータを挿入
+def insert_sample_user():
     try:
-        # Userテーブルにサンプルデータを挿入
         user1 = models.User(administrative=1, password="1111")
         user2 = models.User(administrative=2, password="2222")
-
-        # Reportテーブルにサンプルデータを挿入
-        report1 = models.Report(
-            content="道路が壊れています",
-            importance=2,
-            image="image1.png",
-            location="東京都新宿区",
-            datetime="2024-12-23 12:00:00"
-        )
-        report2 = models.Report(
-            content="信号が故障しています",
-            importance=1,
-            image="image2.png",
-            location="大阪市北区",
-            datetime="2024-12-24 09:30:00"
-        )
-
-        # データをセッションに追加
+        
         db.add(user1)
         db.add(user2)
+        db.commit()
+        print("ユーザーデータを挿入しました。")
+    except Exception as e:
+        db.rollback()
+        print(f"ユーザーデータ挿入中にエラーが発生しました: {e}")
+
+# レポートテーブルにサンプルデータを挿入
+def insert_sample_report():
+    try:
+        report1 = models.Report(
+            content="洪水が発生しています。",
+            importance=5,
+            image="sample_base64_image_data_1,sample_base64_image_data_2",
+            location="35.6895,139.6917",
+            datetime=datetime.now()  # 修正箇所
+        )
+        report2 = models.Report(
+            content="地震による建物の倒壊あり。",
+            importance=4,
+            image="sample_base64_image_data_3",
+            location="34.0522,118.2437",
+            datetime=datetime.now()  # 修正箇所
+        )
+
         db.add(report1)
         db.add(report2)
-
-        # コミットしてデータを保存
         db.commit()
-
-        print("サンプルデータを挿入しました。")
+        print("レポートデータを挿入しました。")
     except Exception as e:
-        print(f"エラーが発生しました: {e}")
         db.rollback()
-    finally:
-        db.close()
+        print(f"レポートデータ挿入中にエラーが発生しました: {e}")
 
-# 実行
+# データベースの内容を確認
+def fetch_all_data():
+    try:
+        users = db.query(models.User).all()
+        reports = db.query(models.Report).all()
+
+        print("=== ユーザーデータ ===")
+        for user in users:
+            print(f"ID: {user.id}, Administrative: {user.administrative}, Password: {user.password}")
+
+        print("\n=== レポートデータ ===")
+        for report in reports:
+            print(f"Support ID: {report.support_id}, Content: {report.content}, Importance: {report.importance}, "
+                  f"Location: {report.location}, Datetime: {report.datetime}, Images: {report.image}")
+    except Exception as e:
+        print(f"データ取得中にエラーが発生しました: {e}")
+
+# サンプルデータを挿入して確認
 if __name__ == "__main__":
-    create_sample_data()
+    insert_sample_user()
+    insert_sample_report()
+    fetch_all_data()

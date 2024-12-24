@@ -1,17 +1,21 @@
-from fastapi import FastAPI, Depends, HTTPException
+import datetime
+from typing import List
+from fastapi import FastAPI, Depends, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.params import File
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import models
 from database import SessionLocal, engine
 from contextlib import asynccontextmanager
-import os  # osモジュールを追加
+import os
+import base64
+from fastapi import Form
 
 # lifespanイベントで起動時にDB作成
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("アプリ起動時: データベースを作成します...")
-    models.Base.metadata.create_all(bind=engine)  # テーブル作成
     print("データベース作成完了")
     yield  # アプリの動作を開始
     print("アプリ終了時: クリーンアップ処理")
@@ -20,6 +24,20 @@ async def lifespan(app: FastAPI):
 class LoginRequest(BaseModel):
     code: str
     password: str
+
+# 位置情報用のモデル
+class Location(BaseModel):
+    latitude: float
+    longitude: float
+
+# メインのリクエスト用モデル
+class DisasterRequest(BaseModel):
+    disaster: str
+    description: str
+    isImportant: bool
+    importance: int
+    location: Location  # Locationモデルを使う
+    images: list[str] = []  # ここで images を受け取れるようにする
 
 # FastAPIアプリ本体
 app = FastAPI(lifespan=lifespan)
@@ -56,23 +74,49 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     else:
         return {"success": False}
 
-# government_tableからデータを取得するエンドポイント
-@app.get("/users")
-def get_users(db: Session = Depends(get_db)):
-    try:
-        # government_tableから全てのデータを取得
-        users = db.query(models.User).all()
-        # データを整形して返す
-        return {
-            "text": [
-                {"id": user.id, "administrative": user.administrative, "password": user.password}
-                for user in users
-            ]
-        }
-    except Exception as e:
-        # エラー発生時に例外を返す
-        raise HTTPException(status_code=500, detail=f"データの取得中にエラーが発生しました: {str(e)}")
 
+# 画像保存用ディレクトリ
+UPLOAD_DIR = "uploaded_images"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# 災害報告エンドポイント
+@app.post("/disaster_report")
+async def disaster_report(
+    disaster: str = Form(...),
+    description: str = Form(...),
+    isImportant: bool = Form(...),
+    importance: int = Form(...),
+    latitude: float = Form(...),
+    longitude: float = Form(...),
+    images: List[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        # アップロードされた画像をBase64エンコードして保存
+        base64_images = []
+        for image in images:
+            image_bytes = await image.read()
+            encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+            base64_images.append(encoded_image)
+
+        # データベースに新しいレポートを作成して保存
+        report = models.Report(
+            content=description,
+            importance=importance,
+            image=",".join(base64_images),
+            location=f"{latitude},{longitude}",
+            datetime=datetime.datetime.now(),
+        )
+        db.add(report)
+        db.commit()
+        db.refresh(report)
+
+        return {"success": True, "report_id": report.support_id}
+    except Exception as e:
+        db.rollback()
+        print(f"エラー詳細: {e}")  # サーバーログに詳細を記録
+        raise HTTPException(status_code=500, detail=f"データ保存中にエラーが発生しました。エラー詳細: {str(e)}")
+    
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get('PORT', 8000))  # デフォルトポートを8000に変更
