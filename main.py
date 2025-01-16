@@ -114,6 +114,52 @@ async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db
         logger.error(f"サーバーエラーが発生しました: {str(e)}")
         raise HTTPException(status_code=500, detail=f"サーバーエラーが発生しました: {str(e)}")
 
+@app.get("/disaster_report")
+async def get_disaster_reports(db: Session = Depends(get_db)):
+    try:
+        # Reportテーブルからすべての災害報告を取得
+        reports = db.query(models.Report).all()
+        
+        # 各報告の情報を返す形式に変換
+        report_data = []
+        for report in reports:
+            # 位置情報（latitude, longitude）の分解
+            latitude, longitude = report.location.split(',')
+            
+            # 画像をBase64形式に変換
+            base64_images = []
+            for image_path in report.image.split(','):
+                try:
+                    with open(image_path, "rb") as image_file:
+                        # 画像を読み込みBase64にエンコード
+                        image_data = image_file.read()
+                        base64_image = base64.b64encode(image_data).decode('utf-8')
+                        base64_images.append(base64_image)
+                except FileNotFoundError:
+                    # 画像が見つからない場合のエラーハンドリング
+                    base64_images.append(None)
+            
+            report_data.append({
+                "report_id": report.support_id,
+                "disaster": report.content,
+                "description": report.content,
+                "isImportant": report.importance > 5,  # importanceが5以上で重要と判断
+                "importance": report.importance,
+                "location": {
+                    "latitude": float(latitude),
+                    "longitude": float(longitude)
+                },
+                "images": base64_images,  # Base64エンコードされた画像
+                "datetime": report.datetime
+            })
+        
+        logger.info("災害報告の情報を返却しました。")
+        return {"success": True, "reports": report_data}
+    
+    except Exception as e:
+        logger.error(f"エラーが発生しました。エラー詳細: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"エラーが発生しました。エラー詳細: {str(e)}")
+    
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
