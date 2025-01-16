@@ -114,7 +114,7 @@ async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db
         logger.error(f"サーバーエラーが発生しました: {str(e)}")
         raise HTTPException(status_code=500, detail=f"サーバーエラーが発生しました: {str(e)}")
 
-@app.get("/disaster_report")
+@app.get("/disaster")
 async def get_disaster_reports(db: Session = Depends(get_db)):
     try:
         # Reportテーブルからすべての災害報告を取得
@@ -137,7 +137,7 @@ async def get_disaster_reports(db: Session = Depends(get_db)):
                         base64_images.append(base64_image)
                 except FileNotFoundError:
                     # 画像が見つからない場合のエラーハンドリング
-                    base64_images.append(None)
+                    base64_images.append(None)  
             
             report_data.append({
                 "report_id": report.support_id,
