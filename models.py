@@ -1,5 +1,4 @@
-from database import Base,engine
-import models
+from database import Base, engine
 from sqlalchemy import Column, Integer, String, Text, DateTime
 import datetime as dt
 
@@ -22,6 +21,6 @@ class Report(Base):
     datetime = Column(DateTime, default=dt.datetime.utcnow, nullable=False)  # 現在日時をデフォルト設定
 
 # 既存のテーブルを削除してから再作成
-# models.Base.metadata.drop_all(bind=engine)  # 全てのテーブルを削除
-models.Base.metadata.create_all(bind=engine)  # 新しいテーブルを作成
+# Base.metadata.drop_all(bind=engine)  # 全てのテーブルを削除
+Base.metadata.create_all(bind=engine)  # 新しいテーブルを作成
 print("データベースを再作成しました。")

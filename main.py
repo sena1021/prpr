@@ -1,25 +1,19 @@
 import datetime
 from typing import List
-from fastapi import FastAPI, Depends, HTTPException, UploadFile
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.params import File
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from disaster_report import handle_disaster_report
-import models
-from database import SessionLocal, engine
-from contextlib import asynccontextmanager
 import os
 import base64
-from fastapi import Form
+from pydantic import BaseModel
+from database import SessionLocal
+import models
+import logging
 
-# lifespanイベントで起動時にDB作成
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("アプリ起動時: データベースを作成します...")
-    print("データベース作成完了")
-    yield  # アプリの動作を開始
-    print("アプリ終了時: クリーンアップ処理")
+# ログの設定
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # リクエストモデル
 class LoginRequest(BaseModel):
@@ -38,10 +32,10 @@ class DisasterRequest(BaseModel):
     isImportant: bool
     importance: int
     location: Location  # Locationモデルを使う
-    images: list[str] = []  # ここで images を受け取れるようにする
+    images: List[str] = []  # ここで images を受け取れるようにする
 
 # FastAPIアプリ本体
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 # CORSミドルウェアの設定
 app.add_middleware(
@@ -60,21 +54,6 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/")
-def read_root():
-    return {"message": "データベースが自動作成されました！"}
-
-@app.post("/login")
-async def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(
-        models.User.administrative == request.code,
-        models.User.password == request.password
-    ).first()
-    if user:
-        return {"success": True}
-    else:
-        return {"success": False}
-
 # 画像保存用ディレクトリ
 UPLOAD_DIR = "uploaded_images"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -87,19 +66,46 @@ async def disaster_report(
     importance: int = Form(...),
     latitude: float = Form(...),
     longitude: float = Form(...),
-    images: List[UploadFile] = File(...),
+    images: List[str] = Form(...),  # Base64形式の画像をリストで受け取る
     db: Session = Depends(get_db),
 ):
-    return await handle_disaster_report(
-        disaster=disaster,
-        description=description,
-        isImportant=isImportant,
-        importance=importance,
-        latitude=latitude,
-        longitude=longitude,
-        images=images,
-        db=db
-    )
+    try:
+        # Base64画像データを保存し、ファイルパスを取得
+        image_paths = []
+        for i, base64_image in enumerate(images):
+            try:
+                # デコードして画像データに変換
+                image_data = base64.b64decode(base64_image)
+                file_name = f"image_{datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{i}.png"
+                file_path = os.path.join(UPLOAD_DIR, file_name)
+                
+                # ディスクに保存
+                with open(file_path, "wb") as f:
+                    f.write(image_data)
+                image_paths.append(file_path)
+                
+                logger.info(f"画像 {file_name} を保存しました")
+            except Exception as e:
+                logger.error(f"画像の保存中にエラーが発生しました: {e}")
+                raise HTTPException(status_code=400, detail=f"画像の保存中にエラーが発生しました: {e}")
+
+        # レポートをデータベースに保存
+        new_report = models.Report(
+            content=description,
+            importance=importance,
+            image=image_paths,  # 画像のファイルパスを保存
+            location=f"{latitude},{longitude}",  # 位置情報を文字列として保存
+            datetime=datetime.datetime.utcnow()
+        )
+        db.add(new_report)
+        db.commit()
+
+        logger.info("災害報告がデータベースに保存されました。")
+        return {"success": True, "message": "災害報告が保存されました。"}
+    
+    except Exception as e:
+        logger.error(f"サーバーエラーが発生しました: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"サーバーエラーが発生しました: {str(e)}")
 
 # 位置情報を返すエンドポイント
 @app.get("/disaster_report")
@@ -118,13 +124,13 @@ async def get_disaster_reports(db: Session = Depends(get_db)):
                 "longitude": float(longitude),
             })
         
+        logger.info("災害報告の位置情報を返却しました。")
         return {"success": True, "locations": location_data}
     
     except Exception as e:
-        print(f"エラー詳細: {e}")
+        logger.error(f"エラーが発生しました。エラー詳細: {str(e)}")
         raise HTTPException(status_code=500, detail=f"エラーが発生しました。エラー詳細: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get('PORT', 8000))  # デフォルトポートを8000に変更
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
