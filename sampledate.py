@@ -17,11 +17,12 @@ def create_sample_user(db: Session):
 # サンプル報告作成
 def create_sample_report(db: Session):
     report = models.Report(
+        disaster="地震",  # 必須項目に値を追加
         content="地震が発生しました。建物が倒壊しています。",
         importance=5,
         image="sample_image_base64_data_here",  # サンプルのBase64データ
         location="35.6895,139.6917",  # 緯度経度（例：東京の位置）
-        datetime=datetime.utcnow()
+        datetime=datetime.utcnow()  # 現在の日時
     )
     db.add(report)
     db.commit()

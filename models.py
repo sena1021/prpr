@@ -13,6 +13,7 @@ class User(Base):
 class Report(Base):
     __tablename__ = "report_data_table"
 
+    disaster = Column(String,nullable=False)  # 必須項目
     support_id = Column(Integer, primary_key=True, autoincrement=True)
     content = Column(Text, nullable=False)  # 説明は必須項目
     importance = Column(Integer, nullable=False)  # 必須項目

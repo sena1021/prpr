@@ -97,6 +97,7 @@ async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db
 
         # データベースに災害報告を保存
         new_report = models.Report(
+            disaster = request.disaster,
             content=request.description,
             importance=request.importance,
             image=",".join(image_paths),  # 画像のファイルパスをカンマ区切りで保存
@@ -141,7 +142,7 @@ async def get_disaster_reports(db: Session = Depends(get_db)):
             
             report_data.append({
                 "report_id": report.support_id,
-                "disaster": report.content,
+                "disaster": report.disaster,
                 "description": report.content,
                 "isImportant": report.importance > 5,  # importanceが5以上で重要と判断
                 "importance": report.importance,
