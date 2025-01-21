@@ -17,12 +17,13 @@ def create_sample_user(db: Session):
 # サンプル報告作成
 def create_sample_report(db: Session):
     report = models.Report(
-        disaster="地震",  # 必須項目に値を追加
+        disaster="地震",  # 災害の種類
         content="地震が発生しました。建物が倒壊しています。",
         importance=5,
-        image="sample_image_base64_data_here",  # サンプルのBase64データ
+        image="sample_base64_image_data",  # サンプルのBase64画像データ
         location="35.6895,139.6917",  # 緯度経度（例：東京の位置）
-        datetime=datetime.utcnow()  # 現在の日時
+        status=0,  # 初期状態
+        datetime=datetime.utcnow()  # 現在時刻
     )
     db.add(report)
     db.commit()
@@ -33,12 +34,15 @@ def create_sample_report(db: Session):
 def create_sample_data():
     db = SessionLocal()
     try:
-        # ユーザーと報告を作成
-        create_sample_user(db)
-        create_sample_report(db)
+        # ユーザーと報告データを作成
+        user = create_sample_user(db)
+        report = create_sample_report(db)
         print("サンプルデータを作成しました。")
+        print(f"ユーザー: {user}")
+        print(f"報告: {report}")
     finally:
         db.close()
 
+# スクリプトのエントリーポイント
 if __name__ == "__main__":
     create_sample_data()

@@ -62,6 +62,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 def read_root():
     return {"message": "データベースが自動作成されました！"}
 
+#ログインAPI
 @app.post("/login")
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(
@@ -73,6 +74,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     else:
         return {"success": False}
 
+# 災害報告API
 @app.post("/disaster_report")
 async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db)):
     try:
@@ -115,6 +117,7 @@ async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db
         logger.error(f"サーバーエラーが発生しました: {str(e)}")
         raise HTTPException(status_code=500, detail=f"サーバーエラーが発生しました: {str(e)}")
 
+# 災害報告取得API
 @app.get("/disaster")
 async def get_disaster_reports(db: Session = Depends(get_db)):
     try:
@@ -160,7 +163,7 @@ async def get_disaster_reports(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"エラーが発生しました。エラー詳細: {str(e)}")
         raise HTTPException(status_code=500, detail=f"エラーが発生しました。エラー詳細: {str(e)}")
-    
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
