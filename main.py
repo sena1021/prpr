@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import os
 import base64
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from database import SessionLocal
 import models
 import logging
@@ -34,7 +34,7 @@ class DisasterRequest(BaseModel):
     location: Location  # Locationモデルを使う
     images: List[str] = []  # ここで images を受け取れるようにする
     datetime: datetime.datetime
-    status: int
+    status: int = Field(default=0)
 
 # FastAPIアプリ本体
 app = FastAPI()
@@ -107,7 +107,7 @@ async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db
             image=",".join(image_paths),  # 画像のファイルパスをカンマ区切りで保存
             location=f"{request.location.latitude},{request.location.longitude}",  # 位置情報を文字列として保存
             datetime=datetime.datetime.utcnow(),  # 現在の日時を保存
-            status=0 # 状態を保存
+            status=request.status
         )
         db.add(new_report)
         db.commit()
