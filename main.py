@@ -33,6 +33,8 @@ class DisasterRequest(BaseModel):
     importance: int
     location: Location  # Locationモデルを使う
     images: List[str] = []  # ここで images を受け取れるようにする
+    datetime: datetime.datetime
+    status: int
 
 # FastAPIアプリ本体
 app = FastAPI()
@@ -104,7 +106,8 @@ async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db
             importance=request.importance,
             image=",".join(image_paths),  # 画像のファイルパスをカンマ区切りで保存
             location=f"{request.location.latitude},{request.location.longitude}",  # 位置情報を文字列として保存
-            datetime=datetime.datetime.utcnow()  # 現在の日時を保存
+            datetime=datetime.datetime.utcnow(),  # 現在の日時を保存
+            status=0 # 状態を保存
         )
         db.add(new_report)
         db.commit()
@@ -154,7 +157,8 @@ async def get_disaster_reports(db: Session = Depends(get_db)):
                     "longitude": float(longitude)
                 },
                 "images": base64_images,  # Base64エンコードされた画像
-                "datetime": report.datetime
+                "datetime": report.datetime,
+                "status": report.status
             })
         
         logger.info("災害報告の情報を返却しました。")
