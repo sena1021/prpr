@@ -1,4 +1,3 @@
-import datetime
 from typing import List
 from zoneinfo import ZoneInfo
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, Form
@@ -80,16 +79,18 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     else:
         return {"success": False}
 
-# 災害報告API
 @app.post("/disaster_report")
 async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db)):
     try:
+        # 現在の日時を取得（日本時間）
+        jp_time = datetime.now(ZoneInfo("Asia/Tokyo"))
+
         # 画像の保存（Base64デコード）
         image_paths = []
         for i, base64_image in enumerate(request.images):
             try:
                 # Base64画像データをデコードして保存
-                image_data = base64.b64decode(base64_image)  # Base64をデコード
+                image_data = base64.b64decode(base64_image)
                 file_name = f"image_{jp_time.strftime('%Y%m%d%H%M%S')}_{i}.png"  # ファイル名生成
                 file_path = os.path.join(UPLOAD_DIR, file_name)
 
@@ -105,12 +106,13 @@ async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db
 
         # データベースに災害報告を保存
         new_report = models.Report(
-            disaster = request.disaster,
+            disaster=request.disaster,
             content=request.description,
             importance=request.importance,
             image=",".join(image_paths),  # 画像のファイルパスをカンマ区切りで保存
             location=f"{request.location.latitude},{request.location.longitude}",  # 位置情報を文字列として保存
-            datetime = jp_time# 現在の日時を保存
+            datetime=jp_time,  # 現在の日時を保存
+            status=0  # 状態を0で保存
         )
         db.add(new_report)
         db.commit()
