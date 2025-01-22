@@ -1,5 +1,6 @@
 import datetime
 from typing import List
+from zoneinfo import ZoneInfo
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -9,6 +10,8 @@ from pydantic import BaseModel, Field
 from database import SessionLocal
 import models
 import logging
+from datetime import datetime
+from pytz import timezone
 
 # ログの設定
 import logging
@@ -33,8 +36,9 @@ class DisasterRequest(BaseModel):
     importance: int
     location: Location  # Locationモデルを使う
     images: List[str] = []  # ここで images を受け取れるようにする
-    datetime: datetime.datetime
-    status: int = Field(default=0)
+
+# 日本時間の現在日時を取得
+jp_time = datetime.now(ZoneInfo("Asia/Tokyo"))
 
 # FastAPIアプリ本体
 app = FastAPI()
@@ -86,7 +90,7 @@ async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db
             try:
                 # Base64画像データをデコードして保存
                 image_data = base64.b64decode(base64_image)  # Base64をデコード
-                file_name = f"image_{datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{i}.png"  # ファイル名生成
+                file_name = f"image_{jp_time.strftime('%Y%m%d%H%M%S')}_{i}.png"  # ファイル名生成
                 file_path = os.path.join(UPLOAD_DIR, file_name)
 
                 # ディスクに画像を保存
@@ -106,8 +110,7 @@ async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db
             importance=request.importance,
             image=",".join(image_paths),  # 画像のファイルパスをカンマ区切りで保存
             location=f"{request.location.latitude},{request.location.longitude}",  # 位置情報を文字列として保存
-            datetime=datetime.datetime.utcnow(),  # 現在の日時を保存
-            status=request.status
+            datetime = jp_time# 現在の日時を保存
         )
         db.add(new_report)
         db.commit()
