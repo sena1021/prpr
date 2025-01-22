@@ -10,7 +10,6 @@ from database import SessionLocal
 import models
 import logging
 from datetime import datetime
-from pytz import timezone
 
 # ログの設定
 import logging
@@ -172,6 +171,28 @@ async def get_disaster_reports(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"エラーが発生しました。エラー詳細: {str(e)}")
         raise HTTPException(status_code=500, detail=f"エラーが発生しました。エラー詳細: {str(e)}")
+
+# 災害報告の削除（ステータス変更）API
+@app.delete("/disaster/{report_id}")
+async def update_disaster_status(report_id: int, db: Session = Depends(get_db)):
+    try:
+        # 対象のレポートを取得
+        report = db.query(models.Report).filter(models.Report.support_id == report_id).first()
+        
+        if not report:
+            logger.warning(f"指定されたレポートID {report_id} が見つかりませんでした。")
+            raise HTTPException(status_code=404, detail="指定されたレポートが見つかりません。")
+        
+        # ステータスを 5 に変更
+        report.status = 5
+        db.commit()
+        logger.info(f"レポートID {report_id} のステータスを 5 に変更しました。")
+        
+        return {"success": True, "message": f"レポートID {report_id} のステータスを 5 に変更しました。"}
+    
+    except Exception as e:
+        logger.error(f"ステータス変更中にエラーが発生しました: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"ステータス変更中にエラーが発生しました: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
