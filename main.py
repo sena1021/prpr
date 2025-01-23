@@ -124,7 +124,6 @@ async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db
         logger.error(f"サーバーエラーが発生しました: {str(e)}")
         raise HTTPException(status_code=500, detail=f"サーバーエラーが発生しました: {str(e)}")
 
-# 災害報告取得API
 @app.get("/disaster")
 async def get_disaster_reports(db: Session = Depends(get_db)):
     try:
@@ -134,6 +133,10 @@ async def get_disaster_reports(db: Session = Depends(get_db)):
         # 各報告の情報を返す形式に変換
         report_data = []
         for report in reports:
+            # status が 5 のレポートをスキップ
+            if report.status == 5:
+                continue
+            
             # 位置情報（latitude, longitude）の分解
             latitude, longitude = report.location.split(',')
             
