@@ -197,6 +197,25 @@ async def update_disaster_status(report_id: int, db: Session = Depends(get_db)):
         logger.error(f"ステータス変更中にエラーが発生しました: {str(e)}")
         raise HTTPException(status_code=500, detail=f"ステータス変更中にエラーが発生しました: {str(e)}")
 
+@app.post("/disaster/{report_id}/swap_status")
+async def swap_disaster_status(report_id: int, db: Session = Depends(get_db)):
+    try:
+        report = db.query(models.Report).filter(models.Report.support_id == report_id).first()
+
+        if not report:
+            raise HTTPException(status_code=404, detail="指定されたレポートが見つかりません。")
+
+        # ステータスを 0 → 1 → 2 → 0 のように変更
+        report.status = (report.status + 1) % 3
+        db.commit()
+        db.refresh(report)
+
+        return {"success": True, "message": "ステータスを変更しました。", "new_status": report.status}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"ステータス変更中にエラーが発生しました: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
