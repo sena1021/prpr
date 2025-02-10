@@ -35,6 +35,9 @@ class DisasterRequest(BaseModel):
     location: Location  # Locationモデルを使う
     images: List[str] = []  # ここで images を受け取れるようにする
 
+class CommentRequest(BaseModel):
+    comment: str
+
 # 日本時間の現在日時を取得
 jp_time = datetime.now(ZoneInfo("Asia/Tokyo"))
 
@@ -197,6 +200,7 @@ async def update_disaster_status(report_id: int, db: Session = Depends(get_db)):
         logger.error(f"ステータス変更中にエラーが発生しました: {str(e)}")
         raise HTTPException(status_code=500, detail=f"ステータス変更中にエラーが発生しました: {str(e)}")
 
+# 災害報告のステータス変更API
 @app.post("/disaster/{report_id}/swap_status")
 async def swap_disaster_status(report_id: int, db: Session = Depends(get_db)):
     try:
@@ -215,6 +219,28 @@ async def swap_disaster_status(report_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"ステータス変更中にエラーが発生しました: {str(e)}")
 
+
+@app.post("/disaster/{report_id}/comment")
+async def disaster_comment(report_id: int, request: CommentRequest, db: Session = Depends(get_db)):
+    try:
+        report = db.query(models.Report).filter(models.Report.support_id == report_id).first()
+
+        if not report:
+            logger.warning(f"レポートID {report_id} が見つかりません。")
+            raise HTTPException(status_code=404, detail="指定されたレポートが見つかりません。")
+
+        # 受け取ったコメントを設定
+        report.comment = request.comment
+        db.flush()  # 変更を確定前に適用
+        db.commit()
+        db.refresh(report)
+
+        logger.info(f"レポートID {report_id} にコメントを追加しました。")
+        return {"success": True, "message": "コメントを追加しました。", "new_comment": report.comment}
+ 
+    except Exception as e:
+        logger.error(f"コメント追加中にエラー: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"コメント追加中にエラー: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

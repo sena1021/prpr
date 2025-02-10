@@ -16,6 +16,7 @@ class Report(Base):
     support_id = Column(Integer, primary_key=True, autoincrement=True)
     disaster = Column(String,nullable=False)  # 必須項目
     content = Column(Text, nullable=False)  # 説明は必須項目
+    comment = Column(String, nullable=True)  # コメントは必須ではない
     importance = Column(Integer, nullable=False)  # 必須項目
     image = Column(Text, nullable=True)  # Base64画像を格納、必須ではない
     location = Column(String, nullable=False)  # 緯度経度は必須項目

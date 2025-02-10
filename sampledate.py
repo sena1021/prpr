@@ -1,48 +1,76 @@
+from sqlalchemy.orm import Session
 from database import SessionLocal
 import models
-from sqlalchemy.orm import Session
-from datetime import datetime
+import datetime
 
-# サンプルユーザー作成
-def create_sample_user(db: Session):
-    user = models.User(
-        administrative=1,  # サンプルの管理者コード
-        password="1111"  # サンプルパスワード
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+# データベースセッションを作成
+db: Session = SessionLocal()
 
-# サンプル報告作成
-def create_sample_report(db: Session):
-    report = models.Report(
-        disaster="地震",  # 災害の種類
-        content="地震が発生しました。建物が倒壊しています。",
-        importance=5,
-        image="sample_base64_image_data",  # サンプルのBase64画像データ
-        location="35.6895,139.6917",  # 緯度経度（例：東京の位置）
-        status=0,  # 初期状態
-        datetime=datetime.utcnow()  # 現在時刻
-    )
-    db.add(report)
-    db.commit()
-    db.refresh(report)
-    return report
+# ユーザーのテストデータ
+test_user = models.User(administrative=1, password="1")
+db.add(test_user)
 
-# サンプルデータの挿入
-def create_sample_data():
-    db = SessionLocal()
-    try:
-        # ユーザーと報告データを作成
-        user = create_sample_user(db)
-        report = create_sample_report(db)
-        print("サンプルデータを作成しました。")
-        print(f"ユーザー: {user}")
-        print(f"報告: {report}")
-    finally:
-        db.close()
+# 災害報告のテストデータ（5件）
+test_reports = [
+    models.Report(
+        disaster="地震",
+        content="強い揺れを観測しました。",
+        comment="余震に注意してください。",
+        importance=8,
+        image="test_image1.png",
+        location="35.6895,139.6917",  # 東京
+        status=0,
+        datetime=datetime.datetime.utcnow()
+    ),
+    models.Report(
+        disaster="台風",
+        content="暴風雨により停電が発生。",
+        comment="安全な場所へ避難してください。",
+        importance=7,
+        image="test_image2.png",
+        location="33.5904,130.4017",  # 福岡
+        status=1,
+        datetime=datetime.datetime.utcnow()
+    ),
+    models.Report(
+        disaster="洪水",
+        content="川の水位が上昇し、避難が必要。",
+        comment="近隣住民に避難勧告。",
+        importance=9,
+        image="test_image3.png",
+        location="34.6937,135.5023",  # 大阪
+        status=2,
+        datetime=datetime.datetime.utcnow()
+    ),
+    models.Report(
+        disaster="火災",
+        content="大規模な火災が発生。",
+        comment="消防隊が出動。",
+        importance=10,
+        image="test_image4.png",
+        location="35.0116,135.7681",  # 京都
+        status=0,
+        datetime=datetime.datetime.utcnow()
+    ),
+    models.Report(
+        disaster="津波",
+        content="沿岸部に津波警報が発令。",
+        comment="高台へ避難してください。",
+        importance=10,
+        image="test_image5.png",
+        location="38.2682,140.8694",  # 仙台
+        status=1,
+        datetime=datetime.datetime.utcnow()
+    ),
+]
 
-# スクリプトのエントリーポイント
-if __name__ == "__main__":
-    create_sample_data()
+# データベースに追加
+db.add_all(test_reports)
+
+# コミットして保存
+db.commit()
+
+# セッションを閉じる
+db.close()
+
+print("テストデータ5件を作成しました。")
