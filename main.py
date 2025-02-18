@@ -81,6 +81,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     else:
         return {"success": False}
 
+# 災害報告API
 @app.post("/disaster_report")
 async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db)):
     try:
@@ -126,7 +127,7 @@ async def disaster_report(request: DisasterRequest, db: Session = Depends(get_db
     except Exception as e:
         logger.error(f"サーバーエラーが発生しました: {str(e)}")
         raise HTTPException(status_code=500, detail=f"サーバーエラーが発生しました: {str(e)}")
-
+# 災害報告の取得API
 @app.get("/disaster")
 async def get_disaster_reports(db: Session = Depends(get_db)):
     try:
@@ -219,7 +220,7 @@ async def swap_disaster_status(report_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"ステータス変更中にエラーが発生しました: {str(e)}")
 
-
+# 災害報告のコメント追加API
 @app.post("/disaster/{report_id}/comment")
 async def disaster_comment(report_id: int, request: CommentRequest, db: Session = Depends(get_db)):
     try:
@@ -227,7 +228,7 @@ async def disaster_comment(report_id: int, request: CommentRequest, db: Session 
 
         if not report:
             logger.warning(f"レポートID {report_id} が見つかりません。")
-            raise HTTPException(status_code=404, detail="指定されたレポートが見つかりません。")
+            raise HTTPException(   atus_code=404, detail="指定されたレポートが見つかりません。")
 
         # 受け取ったコメントを設定
         report.comment = request.comment
