@@ -161,6 +161,7 @@ async def get_disaster_reports(db: Session = Depends(get_db)):
                 "report_id": report.support_id,
                 "disaster": report.disaster,
                 "description": report.content,
+                "comment": report.comment,
                 "isImportant": report.importance > 5,  # importanceが5以上で重要と判断
                 "importance": report.importance,
                 "location": {
