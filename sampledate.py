@@ -20,7 +20,7 @@ reports = [
            importance=3, image="", location="43.0902,141.3468", status=1, datetime=dt.datetime.utcnow()),
     Report(disaster="火災", content="札幌市中央区のビルで火災が発生", comment="消防隊が出動済み", 
            importance=4, image="", location="43.0554,141.3405", status=2, datetime=dt.datetime.utcnow()),
-    Report(disaster="豪雪", content="札幌市南区で大雪により交通が麻痺", comment="除雪作業を実施中", 
+    Report(disaster="大雪", content="札幌市南区で大雪により交通が麻痺", comment="除雪作業を実施中", 
            importance=2, image="", location="42.9908,141.3533", status=1, datetime=dt.datetime.utcnow()),
 ]
 session.add_all(reports)
