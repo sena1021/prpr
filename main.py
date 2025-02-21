@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 # リクエストモデル
 class LoginRequest(BaseModel):
     code: str
+    cityname: str
     password: str
 
 # 位置情報用のモデル
@@ -77,7 +78,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
         models.User.password == request.password
     ).first()
     if user:
-        return {"success": True}
+        return {"success": True, "cityname": user.cityname}
     else:
         return {"success": False}
 

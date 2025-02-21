@@ -7,6 +7,7 @@ class User(Base):
     __tablename__ = "government_table"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    cityname = Column(String, unique=True, nullable=False)  # 必須項目
     administrative = Column(Integer, unique=True, nullable=False)  # 必須項目
     password = Column(String, unique=True, nullable=False)         # 必須項目
 
@@ -24,6 +25,6 @@ class Report(Base):
     datetime = Column(DateTime, default=dt.datetime.utcnow, nullable=False)  # 現在日時をデフォルト設定
 
 # 既存のテーブルを削除してから再作成
-# Base.metadata.drop_all(bind=engine)  # 全てのテーブルを削除
+Base.metadata.drop_all(bind=engine)  # 全てのテーブルを削除
 Base.metadata.create_all(bind=engine)  # 新しいテーブルを作成
 print("データベースを再作成しました。")
