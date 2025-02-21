@@ -78,7 +78,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
         models.User.password == request.password
     ).first()
     if user:
-        return {"success": True, "cityname": user.cityname}
+        return {"success": True}
     else:
         return {"success": False}
 

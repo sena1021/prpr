@@ -9,7 +9,7 @@ session = Session()
 
 # ユーザーデータの挿入
 users = [
-    User(administrative=1, cityname="札幌市",password="1")
+    User(administrative=1,password="1")
 ]
 session.add_all(users)
 session.commit()

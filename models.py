@@ -7,7 +7,6 @@ class User(Base):
     __tablename__ = "government_table"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    cityname = Column(String, unique=True, nullable=False)  # 必須項目
     administrative = Column(Integer, unique=True, nullable=False)  # 必須項目
     password = Column(String, unique=True, nullable=False)         # 必須項目
 
